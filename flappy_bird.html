@@ -1,0 +1,192 @@
+<!doctype html>
+<html>
+	<head>
+			<meta charset="utf-8"/>
+			<title>Flappy Bird Master</title>
+	</head>
+	<body>
+		<div id="support"/>
+		<!-- Load Libraries -->
+		<script type="text/javascript" src="JS/Vector2.js"></script>
+        <script type="text/javascript" src="JS/Background.js"></script>
+		<script type="text/javascript" src="JS/Panel.js"></script>
+		<script type="text/javascript" src="JS/Ground.js"></script>
+		<script type="text/javascript" src="JS/Pipelines.js"></script>
+		<script type="text/javascript" src="JS/Bird.js"></script>
+		<script>
+			try{
+				document.createElement("canvas").getContext("2d");
+			}catch(e){
+				document.getElementById("support").innerHTML="HTML5 canvas no soportado";
+			}
+			var context;
+			var textureFolder = 'Assets/Textures/';
+			var soundFolder = 'Assets/Sounds/';
+			
+			var background, startPanel, gameoverPanel;
+			var lasTime = 0;
+			var GameState, state;
+			var entities;
+			var scores = 0;
+			var stateChangeSound, dieSound, hitSound, pointSound, wingSound;
+			
+			
+			window.addEventListener("load",InitializeContext,true);
+			window.addEventListener("keydown",doKeyDown,false);
+			window.addEventListener("click",ClickEvent,false);
+			
+			
+			
+			function InitializeContext()
+			{
+				var canvas = document.getElementById('mycanvas');
+				context = canvas.getContext('2d');
+				context.save();
+				
+				Initialize();
+				setInterval("Game()",10);
+				
+				context.restore();
+			}
+			
+			
+			//Initialize game
+			function Initialize(){
+				//background
+				//background = new Image();
+				//background.src = textureFolder + 'dayBackground.png';
+				
+				//UI Panels
+				startPanel = new Panel(textureFolder + 'initPanel.png');
+				gameoverPanel = new Panel(textureFolder + 'finalPanel.png');
+				
+				//entities
+				entities = new Array();
+                entities[0] = new Background(0);
+                entities[1] = new Background(576);
+				entities[2] = new Pipelines(context.canvas.width);
+				entities[3] = new Pipelines(context.canvas.width + 300);
+				entities[4] = new Ground(0);
+				entities[5] = new Ground(672);
+				entities[6] = new Bird(200);
+				
+				//states
+				GameState = {START:0, GAMEPLAY:1, GAMEOVER:2};
+				state = GameState.START;
+				
+				//sounds
+				stateChangeSound = new Audio(soundFolder + 'sfx_swooshing.ogg');
+				dieSound = new Audio(soundFolder + 'sfx_die.ogg');
+				hitSound = new Audio(soundFolder + 'sfx_hit.ogg');
+				pointSound = new Audio(soundFolder + 'sfx_point.ogg');
+				wingSound = new Audio(soundFolder + 'sfx_wing.ogg');
+			}
+			
+			
+			//Main Loop
+			function Game(){
+				Update();
+				Draw();
+			}
+			
+			//Update Method
+			function Update(){
+				var gameTime = +new Date();
+				var frameTime = gameTime - lasTime;
+				
+				for(var i=0;i<entities.length;i++){
+					entities[i].update(frameTime);
+				}
+				
+				lasTime = gameTime;
+			}
+			
+			function Draw(){
+				//clear canvas
+				context.clearRect(0,0,context.canvas.width,context.canvas.height);
+				
+				//background
+				//context.drawImage(background,0,0);
+				
+				//entities
+				for(var i=0;i<entities.length;i++){
+					entities[i].draw();
+				}
+				
+				//UI
+				switch(state){
+					case GameState.START:
+						startPanel.draw(context);
+						break;
+					case GameState.GAMEPLAY:
+						DrawScores();
+					break;
+					case GameState.GAMEOVER:
+						DrawScores();
+						gameoverPanel.draw(context);
+					break;
+				}
+			}
+			
+			//mouse click
+			function ClickEvent(e){
+				if(state == GameState.GAMEPLAY){
+					wingSound.currentTime = 0;
+					wingSound.play();
+					
+					var bird = entities[6];
+					bird.applyImpulse();
+				}
+			}
+			
+			//press keyboard keys
+			function doKeyDown(e){
+				//alert(e.keyCode);
+				if(e.keyCode == 32){
+					switch(state){
+						case GameState.START:
+						SetNewState(GameState.GAMEPLAY);
+						break;
+						case GameState.GAMEPLAY:
+						SetNewState(GameState.GAMEOVER);
+						break;
+						case GameState.GAMEOVER:
+						SetNewState(GameState.START);
+						break;
+				    }
+				}
+			}
+			
+			//change to new state
+			function SetNewState(newstate){
+
+				state = newstate;
+                
+				if(state == GameState.START){
+                    stateChangeSound.currentTime = 0;
+				    stateChangeSound.play();
+					scores = 0;
+					for(var i=0;i<entities.length;i++){
+					entities[i].reset();
+					}
+				}
+				//alert("current state: "+state);
+			}
+			
+			//Draw Scores
+			function DrawScores(){
+				context.font = 'bold 40px impact';
+				context.fillStyle = "#FFFFE0";
+				context.fillText('Score ' + scores, context.canvas.width/2 - 50 ,50);
+				
+				context.strokeStyle = "#543847";
+				context.lineWidth = 3;
+				context.strokeText('Score ' + scores, context.canvas.width/2 - 50 ,50);
+				
+			}
+		</script>
+		<br/>
+		<canvas id="mycanvas" style="border: 1px solid;" height="512" width="576">
+		</canvas>
+	</body>
+</html>
